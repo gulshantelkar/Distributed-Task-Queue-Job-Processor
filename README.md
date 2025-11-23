@@ -192,8 +192,9 @@ taskqueue_worker3| [INFO] 2025-11-23 12:11:13 workers.worker - Job b045a462-6e64
 
 ---
 
-#System archietecture
+## System Architecture
 
+```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                       👤 USER (WEB BROWSER)                         │
 │                                                                     │
@@ -369,6 +370,7 @@ taskqueue_worker3| [INFO] 2025-11-23 12:11:13 workers.worker - Job b045a462-6e64
 │  • Stats counters              │
 │  • DLQ list                    │
 └────────────────────────────────┘
+```
 
 ## 💼 Job Types
 
