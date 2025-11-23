@@ -1,0 +1,161 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: taskqueue_db
+    environment:
+      POSTGRES_DB: taskqueue_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (for Django Channels)
+  redis:
+    image: redis:7-alpine
+    container_name: taskqueue_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Django Web Application
+  web:
+    build: .
+    container_name: taskqueue_web
+    command: >
+      sh -c "
+        python manage.py migrate &&
+        python manage.py create_superuser --username admin --password admin --email admin@taskqueue.com &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+    environment:
+      - DB_NAME=taskqueue_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DEBUG=True
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Django Channels/Daphne (for WebSockets)
+  channels:
+    build: .
+    container_name: taskqueue_channels
+    command: daphne -b 0.0.0.0 -p 8001 taskqueue.asgi:application
+    environment:
+      - DB_NAME=taskqueue_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DEBUG=True
+    ports:
+      - "8001:8001"
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Worker Process 1
+  worker1:
+    build: .
+    container_name: taskqueue_worker1
+    command: python manage.py run_worker --worker-id worker-1
+    environment:
+      - DB_NAME=taskqueue_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WORKER_LEASE_DURATION=60
+      - WORKER_POLL_INTERVAL=2
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Worker Process 2
+  worker2:
+    build: .
+    container_name: taskqueue_worker2
+    command: python manage.py run_worker --worker-id worker-2
+    environment:
+      - DB_NAME=taskqueue_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WORKER_LEASE_DURATION=60
+      - WORKER_POLL_INTERVAL=2
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Worker Process 3
+  worker3:
+    build: .
+    container_name: taskqueue_worker3
+    command: python manage.py run_worker --worker-id worker-3
+    environment:
+      - DB_NAME=taskqueue_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WORKER_LEASE_DURATION=60
+      - WORKER_POLL_INTERVAL=2
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+

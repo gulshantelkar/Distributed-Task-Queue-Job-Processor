@@ -1,0 +1,31 @@
+# Copy this file to .env and update the values
+# Database Configuration
+DB_NAME=taskqueue_db
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_HOST=localhost
+DB_PORT=5432
+
+# Redis Configuration (for Django Channels)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# Django Settings
+SECRET_KEY=your-secret-key-change-in-production
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# JWT Settings
+JWT_SECRET_KEY=your-jwt-secret-key-change-in-production
+JWT_EXPIRY_HOURS=24
+
+# Worker Settings
+WORKER_LEASE_DURATION=60
+WORKER_POLL_INTERVAL=2
+MAX_JOB_RETRIES=3
+
+# Rate Limiting
+MAX_CONCURRENT_JOBS_PER_TENANT=5
+MAX_JOBS_PER_MINUTE=10
+MAX_JOBS_PER_HOUR=100
+

@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Queue Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .connection-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .connection-status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .connection-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .connection-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .connection-status.connected .connection-dot {
+            background: #28a745;
+        }
+
+        .connection-status.disconnected .connection-dot {
+            background: #dc3545;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-card.pending .stat-value { color: #ffc107; }
+        .stat-card.running .stat-value { color: #17a2b8; }
+        .stat-card.completed .stat-value { color: #28a745; }
+        .stat-card.failed .stat-value { color: #dc3545; }
+
+        .section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: #333;
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: #5568d3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f8f9fa;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        th {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-badge.pending { background: #fff3cd; color: #856404; }
+        .status-badge.running { background: #d1ecf1; color: #0c5460; }
+        .status-badge.completed { background: #d4edda; color: #155724; }
+        .status-badge.failed { background: #f8d7da; color: #721c24; }
+        .status-badge.dead_letter { background: #f5c6cb; color: #721c24; }
+
+        .job-id {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .submit-form {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 5px;
+            color: #495057;
+            font-weight: 500;
+        }
+
+        input, textarea, select {
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: monospace;
+        }
+
+        .submit-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+
+        .submit-btn:hover {
+            background: #218838;
+        }
+
+        .alert {
+            padding: 12px 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Task Queue Dashboard</h1>
+            <div class="connection-status disconnected" id="connectionStatus">
+                <span class="connection-dot"></span>
+                <span id="connectionText">Not Connected</span>
+            </div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card pending">
+                <div class="stat-label">Pending</div>
+                <div class="stat-value" id="statPending">-</div>
+            </div>
+            <div class="stat-card running">
+                <div class="stat-label">Running</div>
+                <div class="stat-value" id="statRunning">-</div>
+            </div>
+            <div class="stat-card completed">
+                <div class="stat-label">Completed</div>
+                <div class="stat-value" id="statCompleted">-</div>
+            </div>
+            <div class="stat-card failed">
+                <div class="stat-label">Failed / DLQ</div>
+                <div class="stat-value" id="statFailed">-</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">Submit New Job</h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span style="color: #666; font-size: 0.9rem;">
+                        Logged in as: <strong id="tenantName"></strong>
+                    </span>
+                    <button class="refresh-btn" onclick="logout()" style="background: #dc3545;">Logout</button>
+                </div>
+            </div>
+            
+            <div id="submitAlert" style="display: none;"></div>
+            
+            <form class="submit-form" id="submitForm">
+                <input type="hidden" id="apiKey">
+
+                <div class="form-group">
+                    <label for="jobType">Job Type *</label>
+                    <select id="jobType">
+                        <option value="test_job">Test Job</option>
+                        <option value="send_email">Send Email</option>
+                        <option value="process_data">Process Data</option>
+                        <option value="generate_report">Generate Report</option>
+                        <option value="call_webhook">Call Webhook</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="payload">Payload (JSON) *</label>
+                    <textarea id="payload" placeholder='{"duration": 5}'>{"duration": 5, "should_fail": false}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="priority">Priority</label>
+                    <input type="number" id="priority" value="0" min="-100" max="100">
+                </div>
+
+                <button type="submit" class="submit-btn">Submit Job</button>
+            </form>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">Recent Jobs</h2>
+                <button class="refresh-btn" onclick="loadJobs()">Refresh</button>
+            </div>
+            
+            <div id="jobsLoading" class="loading">Loading jobs...</div>
+            <div id="jobsContainer" style="display: none;">
+                <table id="jobsTable">
+                    <thead>
+                        <tr>
+                            <th>Job ID</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Retries</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jobsBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">Dead Letter Queue</h2>
+                <button class="refresh-btn" onclick="loadDLQ()">Refresh</button>
+            </div>
+            
+            <div id="dlqContainer">
+                <div class="no-data">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin + '/api';
+        let ws = null;
+        let currentUser = null;
+        
+        // Get CSRF token from cookies
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        const csrftoken = getCookie('csrftoken');
+        
+        // Check authentication on page load
+        async function checkAuth() {
+            try {
+                const response = await fetch(`${API_BASE}/tenants/me/`, {
+                    credentials: 'same-origin'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = data.user;
+                    document.getElementById('tenantName').textContent = data.user.name || data.user.username;
+                    loadStats();
+                    loadJobs();
+                    loadDLQ();
+                } else {
+                    // Not logged in, redirect to landing
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/';
+            }
+        }
+        
+        // Update connection status
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connectionStatus');
+            const textEl = document.getElementById('connectionText');
+            
+            if (connected) {
+                statusEl.classList.remove('disconnected');
+                statusEl.classList.add('connected');
+                textEl.textContent = 'Connected';
+            } else {
+                statusEl.classList.remove('connected');
+                statusEl.classList.add('disconnected');
+                textEl.textContent = 'Not Connected';
+            }
+        }
+        
+        // Logout
+        async function logout() {
+            try {
+                await fetch(`${API_BASE}/tenants/logout/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken
+                    },
+                    credentials: 'same-origin'
+                });
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+            window.location.href = '/';
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+        });
+
+        // Form submission
+        document.getElementById('submitForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentUser) {
+                showAlert('Please login first', 'error');
+                return;
+            }
+            
+            const jobType = document.getElementById('jobType').value;
+            const payloadText = document.getElementById('payload').value;
+            const priority = parseInt(document.getElementById('priority').value);
+            
+            // Parse payload
+            let payload;
+            try {
+                payload = JSON.parse(payloadText);
+            } catch (error) {
+                showAlert('Invalid JSON payload', 'error');
+                return;
+            }
+            
+            // Submit job
+            try {
+                const response = await fetch(`${API_BASE}/jobs/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    credentials: 'same-origin',  // Use session cookies
+                    body: JSON.stringify({
+                        job_type: jobType,
+                        payload: payload,
+                        priority: priority
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showAlert(`Job submitted successfully! ID: ${data.job.id}`, 'success');
+                    loadStats();
+                    loadJobs();
+                } else {
+                    showAlert(data.error || data.detail || 'Failed to submit job', 'error');
+                }
+            } catch (error) {
+                showAlert(`Error: ${error.message}`, 'error');
+            }
+        });
+
+        function showAlert(message, type) {
+            const alert = document.getElementById('submitAlert');
+            alert.className = `alert ${type}`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+
+        async function loadStats() {
+            if (!currentUser) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/jobs/stats/`, {
+                    credentials: 'same-origin'
+                });
+                
+                if (response.ok) {
+                    const stats = await response.json();
+                    document.getElementById('statPending').textContent = stats.pending || 0;
+                    document.getElementById('statRunning').textContent = stats.running || 0;
+                    document.getElementById('statCompleted').textContent = stats.completed || 0;
+                    // Combine failed and dead_letter counts
+                    const failedCount = (stats.failed || 0) + (stats.dead_letter || 0);
+                    document.getElementById('statFailed').textContent = failedCount;
+                    
+                    // Update connection status to connected
+                    updateConnectionStatus(true);
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        async function loadJobs() {
+            if (!currentUser) return;
+            
+            document.getElementById('jobsLoading').style.display = 'block';
+            document.getElementById('jobsContainer').style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE}/jobs/?page_size=20`, {
+                    credentials: 'same-origin'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const jobs = data.results || [];
+                    
+                    const tbody = document.getElementById('jobsBody');
+                    tbody.innerHTML = jobs.map(job => `
+                        <tr>
+                            <td class="job-id">${job.id.substring(0, 8)}...</td>
+                            <td>${job.job_type}</td>
+                            <td><span class="status-badge ${job.status}">${job.status}</span></td>
+                            <td>${job.priority}</td>
+                            <td>${job.retry_count}/${job.max_retries}</td>
+                            <td>${new Date(job.created_at).toLocaleString()}</td>
+                        </tr>
+                    `).join('');
+                    
+                    document.getElementById('jobsLoading').style.display = 'none';
+                    document.getElementById('jobsContainer').style.display = 'block';
+                    updateConnectionStatus(true);
+                }
+            } catch (error) {
+                console.error('Error loading jobs:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        async function loadDLQ() {
+            if (!currentUser) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/dlq/`, {
+                    credentials: 'same-origin'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const dlqItems = data.results || [];
+                    
+                    const container = document.getElementById('dlqContainer');
+                    
+                    if (dlqItems.length === 0) {
+                        container.innerHTML = '<div class="no-data">No items in DLQ</div>';
+                    } else {
+                        container.innerHTML = `
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Job ID</th>
+                                        <th>Type</th>
+                                        <th>Retries</th>
+                                        <th>Error</th>
+                                        <th>Created</th>
+                                        <th>Retried</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${dlqItems.map(item => `
+                                        <tr>
+                                            <td class="job-id">${item.original_job_id.substring(0, 8)}...</td>
+                                            <td>${item.job_type}</td>
+                                            <td>${item.retry_count}</td>
+                                            <td>${(item.final_error_message || '').substring(0, 50)}...</td>
+                                            <td>${new Date(item.created_at).toLocaleString()}</td>
+                                            <td>${item.retried ? 'Yes' : 'No'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading DLQ:', error);
+            }
+        }
+
+        // Auto-refresh stats and jobs
+        setInterval(() => {
+            if (currentUser) {
+                loadStats();
+                loadJobs();
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
+
