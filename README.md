@@ -746,7 +746,9 @@ Default tenant quotas (editable in Django Admin):
 
 ---
 
-## 🚀 Auto-Scaling Workers (Conceptual)
+## Optional / Conceptual Add-Ons (Stretch) 
+
+##Auto-Scaling Workers (Conceptual)
 
 While the current implementation uses a fixed number of workers (3), here's how auto-scaling could be implemented in production:
 
