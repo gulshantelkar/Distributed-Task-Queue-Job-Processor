@@ -160,8 +160,7 @@ docker compose logs -f web
 docker compose logs -f | grep "job_id"
 ```
 
-> **Note:**  
-> Please also check the **logs** folder for the file named **taskqueue.log**.
+
 
 **Example log output:**
 ```
@@ -173,6 +172,11 @@ taskqueue_worker3| [INFO] 2025-11-23 12:11:08 workers.processor - Executing test
 taskqueue_worker3| [INFO] 2025-11-23 12:11:13 jobs.models - Job completed: b045a462-6e64-4c91-b133-4410716f2fbf
 taskqueue_worker3| [INFO] 2025-11-23 12:11:13 workers.worker - Job b045a462-6e64-4c91-b133-4410716f2fbf completed successfully
 ```
+
+
+> **Note:**  
+> Please also check the **logs** folder for the file named **taskqueue.log**.
+
 
 ## 📡 API Endpoints
 
