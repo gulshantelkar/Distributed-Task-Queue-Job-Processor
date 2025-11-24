@@ -160,7 +160,8 @@ docker compose logs -f web
 docker compose logs -f | grep "job_id"
 ```
 
-and also check the folder named logs with file name  = taskqueue.log
+> **Note:**  
+> Please also check the **logs** folder for the file named **taskqueue.log**.
 
 **Example log output:**
 ```
