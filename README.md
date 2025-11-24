@@ -160,6 +160,8 @@ docker compose logs -f web
 docker compose logs -f | grep "job_id"
 ```
 
+and also check the folder named logs with file name  = taskqueue.log
+
 **Example log output:**
 ```
 taskqueue_web    | [INFO] 2025-11-23 12:11:08 jobs.services - Job created: b045a462-6e64-4c91-b133-4410716f2fbf (type: test_job)
